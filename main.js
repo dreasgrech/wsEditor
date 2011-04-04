@@ -1,6 +1,7 @@
 var ws = function(textAreaId, editorId) {
-	var textArea = document.getElementById(textAreaId),
+	var textArea = textarea(document.getElementById(textAreaId)),
 	editor = document.getElementById(editorId),
+	editorWidth = 300,
 	spaceColour = '#FF7F27',
 	tabColour = '#0000FF',
 	relevent = {
@@ -8,57 +9,88 @@ var ws = function(textAreaId, editorId) {
 		tab: 'tab',
 		lf: 'return'
 	},
-	getCharacterSpace = function (c, col) {
-		var el = document.createElement('div');
-		//el.innerHTML = c;
-		el.style.backgroundColor = col;
+	characterWidth = 8,
+	characterHeight = 18,
+	tabCharacterWidth = 65,
+	getCharacterSpace = function(c, col) {
+		var el = document.createElement('span'),
+		width = characterWidth;
+
+		if (col) {
+			el.style.backgroundColor = col;
+		}
 		el.style.cssFloat = 'left';
 		switch (c) {
-			case relevent.space: el.style.width = 10; break;
-			case relevent.tab: el.style.width = 15; break;
+		case relevent.tab:
+			width = tabCharacterWidth;
+			break;
 		}
 
-		el.style.height = 10;
+		el.style.width = width;
+		el.style.height = characterHeight;
+
+		if (!isCharValid(c)) {
+			el.innerHTML = c;
+		}
 
 		return el;
 	},
-	appendAtCaret = function (value) {
-		var sel = document.selection.createRange();
-		if (document.selection) { // IE
-			sel = document.selection.createRange();
-			sel.text = value;
-			return;
+	isCharValid = function(c) {
+		var ch;
+		for (ch in relevent) {
+			if (relevent[ch] === c) {
+				return true;
+			}
 		}
-		console.log(textArea.selectionStart);
-		if (+textArea.selectionStart >= 0) {
-
-		}
-
-	
 	},
-	space= function() {
+	space = function() {
 		editor.appendChild(getCharacterSpace(relevent.space, spaceColour));
 	},
-	tab= function() {
+	tab = function() {
+		console.log('tab');
 		editor.appendChild(getCharacterSpace(relevent.tab, tabColour));
 	},
-	lf= function() {
+	lf = function() {
 
 	},
-	update = function(keyChar) {
-		switch (keyChar) {
-			case relevent.space: space(); break;
-			case relevent.tab: tab(); break;
+	addChar = function(c) {
+		editor.appendChild(getCharacterSpace(c));
+	}, update = function (text) {
+		var c, i = 0, j = text.length;
+		editor.innerHTML = '';
+		for (; i < j; ++i) {
+			c = text[i];
+			switch (c) {
+				case relevent.space:
+					space();
+					break;
+				case '\t':
+					tab();
+					break;
+				case relevent.lf:
+					lf();
+					break;
+				default:
+					addChar(c);
+			}
 		}
 	};
 
-	textArea.onkeydown = function(e) {
+	textArea.element.onkeydown = function(e) {
 		var keyChar = keycode.getValueByEvent(e);
-		update(keyChar);
 		if (keyChar === relevent.tab) {
-			e.preventDefault();
+			e.preventDefault(); // the default behaviour of a tab in a textarea loses focus from the textarea
+			textArea.appendAtCaret('\t');
 		}
 	};
+
+	textArea.element.onkeyup = function (e) {
+		var textInArea = textArea.text(), keyChar = keycode.getValueByEvent(e);
+		update(textInArea);
+	};
+
+	editor.style.width = editorWidth;
+	textArea.element.style.width = editorWidth;
 
 	return {
 		update: update
